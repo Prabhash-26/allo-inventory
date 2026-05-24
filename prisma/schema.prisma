@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  sku         String   @unique
+  description String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stockLevels  StockLevel[]
+  reservations Reservation[]
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockLevels  StockLevel[]
+  reservations Reservation[]
+}
+
+model StockLevel {
+  id          String @id @default(cuid())
+  productId   String
+  warehouseId String
+  totalUnits  Int    @default(0)
+  // "available" = totalUnits - reservedUnits
+  reservedUnits Int  @default(0)
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  RELEASED
+  EXPIRED
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  productId       String
+  warehouseId     String
+  quantity        Int
+  status          ReservationStatus @default(PENDING)
+  expiresAt       DateTime
+  confirmedAt     DateTime?
+  releasedAt      DateTime?
+  customerEmail   String?
+  idempotencyKey  String?           @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@index([status, expiresAt])
+  @@index([productId, warehouseId])
+}
+
+// For idempotency cache
+model IdempotencyRecord {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  endpoint     String
+  responseBody String   @db.Text
+  statusCode   Int
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([key])
+  @@index([expiresAt])
+}
