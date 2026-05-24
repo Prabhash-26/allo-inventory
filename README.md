@@ -4,7 +4,7 @@ A production-quality inventory reservation system built with Next.js 14 App Rout
 
 ## Live Demo
 
-> Deploy to Vercel + Supabase/Neon + Upstash — see **Deployment** below.
+> **Live URL:** https://allo-inventory-silk-eight.vercel.app
 
 ---
 
